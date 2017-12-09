@@ -14,16 +14,19 @@ import java.util.List;
 
 /**
  * Created by Vincent on 10/1/2017.
+ * edited by Alice Huang
  */
 public class GithubQuerier {
 
     private static final String BASE_URL = "https://api.github.com/users/";
+    StringBuilder sb = new StringBuilder();
 
     public static String eventsAsHTML(String user) throws IOException, ParseException {
         List<JSONObject> response = getEvents(user);
         StringBuilder sb = new StringBuilder();
         sb.append("<div>");
         for (int i = 0; i < response.size(); i++) {
+
             JSONObject event = response.get(i);
             // Get event type
             String type = event.getString("type");
@@ -47,6 +50,28 @@ public class GithubQuerier {
             sb.append("<div id=event-" + i + " class=\"collapse\" style=\"height: auto;\"> <pre>");
             sb.append(event.toString());
             sb.append("</pre> </div>");
+            sb.append("<br />");
+
+            JSONObject payload = event.getJSONObject("payload");
+            JSONArray commits = payload.getJSONArray("commits");
+            sb.append("<hr>");
+            sb.append("<ul>");
+            for (int j = 0; j < commits.length(); j++){
+                sb.append("<li>");
+                JSONObject oneCommit = commits.getJSONObject(j);
+                String sha = oneCommit.getString("sha");
+                sb.append("sha: ");
+                sb.append(sha);
+                sb.append("<br />");
+                String message = oneCommit.getString("message");
+                sb.append("message: ");
+                sb.append(message);
+                sb.append("<br />");
+                sb.append("<hr>");
+                sb.append("</li>");
+
+            }
+            sb.append("</ul>");
         }
         sb.append("</div>");
         return sb.toString();
@@ -54,6 +79,7 @@ public class GithubQuerier {
 
     private static List<JSONObject> getEvents(String user) throws IOException {
         List<JSONObject> eventList = new ArrayList<JSONObject>();
+        List<JSONObject> realEventList = new ArrayList<JSONObject>();
         String url = BASE_URL + user + "/events";
         System.out.println(url);
         JSONObject json = Util.queryAPI(new URL(url));
@@ -62,6 +88,16 @@ public class GithubQuerier {
         for (int i = 0; i < events.length() && i < 10; i++) {
             eventList.add(events.getJSONObject(i));
         }
-        return eventList;
+
+        for (int j = 0; j <eventList.size(); j++) {
+            JSONObject event = eventList.get(j);
+            String type = event.getString("type");
+            if (type.equals("PushEvent")){
+                realEventList.add(event);
+            }
+        }
+        return realEventList;
+
     }
+
 }
